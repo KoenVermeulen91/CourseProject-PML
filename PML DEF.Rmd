@@ -15,7 +15,7 @@ Nowadays it is possible to collect a large amount of data about personal activit
 ## Opening libraries
 For the project a few libraries are being used.
 
-```{r, cache = T, echo = F}
+```{r, cache = T, results = "hide"}
 library(dplyr)
 library(randomForest)
 library(caret)
@@ -25,7 +25,7 @@ library(rpart)
 ## Downloading the data
 The data collected by the six participants can be downloaded from [...]. There is a train / test set with 19622 observations and there is a validation set with 20 observations to conduct the prediction on.
 
-```{r, cache = T, echo = F}
+```{r, cache = T, results = "hide"}
 Train_Test_Raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
 Validation_Raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
 dim(Train_Test_Raw)
@@ -36,7 +36,7 @@ str(Validation_Raw)
 
 ## Checking NAs & excluding NA columns & irrelevant columns 
 
-```{r, cache = T, echo = F}
+```{r, cache = T, results = "hide"}
 NA_col <- as.data.frame(sapply(Train_Test_Raw, function(x) sum(is.na(x))))
 NA_col
 ```
