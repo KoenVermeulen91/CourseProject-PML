@@ -1,0 +1,106 @@
+---
+title: "Coursera Practical Machine Learning Course Project"
+author: "Koen Vermeulen"
+date: "18-11-2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+Nowadays it is possible to collect a large amount of data about personal activity relatively inexpensively by using wearing devices. This project predicts the way of exersizing by using the data from accelometers on the belt, forearm, arm, and dumbell of 6 participants.
+
+## Opening libraries
+For the project a few libraries are being used.
+
+```{r, cache = T, echo = F}
+library(dplyr)
+library(randomForest)
+library(caret)
+library(rpart)
+```
+
+## Downloading the data
+The data collected by the six participants can be downloaded from [...]. There is a train / test set with 19622 observations and there is a validation set with 20 observations to conduct the prediction on.
+
+```{r, cache = T, echo = F}
+Train_Test_Raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+Validation_Raw <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+dim(Train_Test_Raw)
+dim(Validation_Raw)
+str(Train_Test_Raw)
+str(Validation_Raw)
+```
+
+## Checking NAs & excluding NA columns & irrelevant columns 
+
+```{r, cache = T, echo = F}
+NA_col <- as.data.frame(sapply(Train_Test_Raw, function(x) sum(is.na(x))))
+NA_col
+```
+
+After checking the NAs, it can be seen that there are columns rarely filled. They contain a lot of NA-values. Therefore we drop these NA-columns. 
+
+There are also some columns which are not relevant for predicting the outcome. These columns are being dropped as well.
+
+We do this for the train / test set, but also for the validation set.
+
+```{r, cache = T}
+Train_Test <- Train_Test_Raw[, colSums(is.na(Train_Test_Raw)) == 0]
+classeTT <- Train_Test$classe
+Train_Test <- select(Train_Test, -X, -user_name, -raw_timestamp_part_1, -raw_timestamp_part_2, -cvtd_timestamp)
+train_test <- Train_Test[, sapply(Train_Test, is.numeric)]
+train_test$classe <- classeTT
+
+Validation <- Validation_Raw[, colSums(is.na(Validation_Raw)) == 0]
+classeV <- Validation$classe
+Validation <- select(Validation, -X, -user_name, -raw_timestamp_part_1, -raw_timestamp_part_2, -cvtd_timestamp)
+validation <- Validation[, sapply(Validation, is.numeric)]
+validation$classe <- classeV
+```
+
+## Setting seed & slicing data in train and test
+Now the data can be split into a training and testing dataset. The partition is set to 0.7. The plots show that the predictor variable has a similar distribution in both sets.
+
+```{r, cache = T}
+set.seed(12321)
+inTrain <- createDataPartition(train_test$classe, p = 0.75, list = FALSE)
+
+train <- train_test[inTrain, ]
+test <- train_test[-inTrain, ]
+
+plot(table(train$classe))
+plot(table(test$classe))
+```
+
+## Training randomforrest model
+The predictive model used for activity recognition is a **Random Forest** algorithm because it automatically selects relevant and important predictors and is robust to correlated covariates & outliers in general. A **5-fold cross validation** is used when applying the algorithm. 
+
+```{r, cache = T}
+cv <- trainControl(method="cv", 5)
+model <- train(classe ~ ., 
+               data = train, 
+               method = "rf", 
+               trControl = cv, 
+               ntree=250)
+model
+```
+
+## Testing the model
+The performance of the model is calculated on the test data set.
+```{r, cache = T}
+predict <- predict(model, test)
+confusionMatrix(test$classe, predict)
+```
+
+The accuracy of the model is 99.86%. 
+
+## Applying model
+With this accuracy the model can be applied to the validation set.
+
+```{r, cache = T}
+result <- predict(model, validation[, -length(names(validation))])
+result
+```  
